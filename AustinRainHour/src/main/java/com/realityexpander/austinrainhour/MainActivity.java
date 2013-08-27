@@ -4,18 +4,23 @@ import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.app.Activity;
 import android.util.Log;
 import android.view.Menu;
 import android.widget.Toast;
 
+import com.realityexpander.austinrainhour.io.network.requests.INetworkRequest;
 import com.realityexpander.austinrainhour.io.network.responses.INetworkResponse;
 import com.realityexpander.austinrainhour.io.network.responses.NetworkResponse;
 import com.realityexpander.austinrainhour.io.toolbox.NetworkServiceTask;
-import com.realityexpander.austinrainhour.io.v1.network.services.HourlyForecastService;
 import com.realityexpander.austinrainhour.io.v2.network.services.ForecastService;
+import com.realityexpander.austinrainhour.io.v2.transfer.DataBlock;
+import com.realityexpander.austinrainhour.io.v2.transfer.DataPoint;
 import com.realityexpander.austinrainhour.io.v2.transfer.LatLng;
+
+import java.util.List;
 
 public class MainActivity extends Activity {
 
@@ -46,8 +51,9 @@ public class MainActivity extends Activity {
                 //}
 
                 LatLng latLng = LatLng.newBuilder()
-                        .setLatitude(latitude) // 37.422006)
-                        .setLongitude(longitude) // -122.084095)
+                        .setLatitude(37.8267) //latitude) // 37.422006)
+                        .setLongitude(-122.423) // longitude) // -122.084095)
+                        //.setTime(System.currentTimeMillis())
                         .build();
 
                 ForecastService.Request request = ForecastService.Request.newBuilder( "e432b91f50911786e5653ab22eb3073a" )
@@ -55,24 +61,29 @@ public class MainActivity extends Activity {
                         .build();
 
                 // v2
-                new NetworkServiceTask() {
+                AsyncTask<INetworkRequest,Void,INetworkResponse> execute = new NetworkServiceTask() {
                     @Override
-                    protected void onPostExecute( INetworkResponse network ) {
-                        if ( network == null || network.getStatus() == NetworkResponse.Status.FAIL ) {
-                            Toast.makeText( MainActivity.this, "FORECAST ERROR", Toast.LENGTH_SHORT ).show();
+                    protected void onPostExecute(INetworkResponse network) {
+                        if (network == null || network.getStatus() == NetworkResponse.Status.FAIL) {
+                            Toast.makeText(MainActivity.this, "FORECAST ERROR", Toast.LENGTH_SHORT).show();
 
                             return;
                         }
 
-                        ForecastService.Response response = ( ForecastService.Response ) network;
+                        ForecastService.Response response = (ForecastService.Response) network;
 
-                        Toast.makeText( MainActivity.this, response.getForecast() != null ?
+                        DataBlock temp = response.getForecast().getMinutely();
+                        List<DataPoint> tempMinute = temp.getData();
+                        DataPoint tempPoint = tempMinute.get(0);
+                        long sunrise = tempPoint.getSunriseTime();
+
+                        Toast.makeText(MainActivity.this, response.getForecast() != null ?
                                 //response.getForecast().getCurrently().getSummary() : "FORECAST", Toast.LENGTH_SHORT ).show();
                                 //Double.toString(response.getForecast().getCurrently().getTemperature()) : "FORECAST", Toast.LENGTH_SHORT ).show();
-                                response.getForecast().getHourly().getSummary() : "FORECAST", Toast.LENGTH_SHORT ).show();
+                                response.getForecast().getHourly().getSummary() : "FORECAST", Toast.LENGTH_SHORT).show();
 
                     }
-                }.execute( request );
+                }.execute(request);
 
             }
 
