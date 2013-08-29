@@ -57,8 +57,11 @@ public class GeoLocation {
 
     public GeoLocation(Double latitude, Double longitude, String API_GEONAMES_USERNAME){
         this.API_GEONAMES_USERNAME = API_GEONAMES_USERNAME;
-        String geoNamesUrl = buildGeoNamesUrl(latitude, longitude);
-        new FetchDataAsync().execute(geoNamesUrl);
+
+        if (latitude != 0 && longitude != 0) {
+            String geoNamesUrl = buildGeoNamesUrl(latitude, longitude);
+            new FetchDataAsync().execute(geoNamesUrl);
+        }
     }
 
     private String buildGeoNamesUrl(Double latitude, Double longitude) {

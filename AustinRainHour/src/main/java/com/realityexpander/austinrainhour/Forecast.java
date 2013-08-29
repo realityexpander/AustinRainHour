@@ -63,8 +63,10 @@ public class Forecast {
 
     public Forecast(Double latitude, Double longitude, String API_KEY){
         this.API_KEY = API_KEY;
-        String forecastUrl = buildForecastUrl(latitude, longitude);
-        new FetchDataAsync().execute(forecastUrl);
+        if (latitude != 0 && longitude != 0) {
+            String forecastUrl = buildForecastUrl(latitude, longitude);
+            new FetchDataAsync().execute(forecastUrl);
+        }
     }
 
     private String buildForecastUrl(Double latitude, Double longitude) {
