@@ -19,12 +19,6 @@
     <!-- The "loading indicator" view. This view overlaps with
          the content, so the visibility of these two views
          should be mutually exclusive. -->
-    <ProgressBar android:id="@+id/loading_spinner"
-                 style="?android:progressBarStyleLarge"
-                 android:layout_width="wrap_content"
-                 android:layout_height="wrap_content"
-                 android:layout_gravity="center"
-                 android:indeterminate="false"/>
 
 
         <TextView
@@ -35,28 +29,38 @@
             android:layout_alignTop="@+id/loading_spinner"
             android:layout_alignParentRight="true"
             android:textColor="#DDDDDD"
-            android:textAlignment="gravity"
             android:textIsSelectable="false"
-            android:gravity="end"/>
+            android:gravity="start"
+            android:layout_alignLeft="@+id/list_view"
+            android:textStyle="bold"/>
 
-    <ListView
+        <ListView
             android:id="@+id/list_view"
             android:layout_width="wrap_content"
-            android:layout_height="220dp"
+            android:layout_height="200dp"
             android:layout_below="@+id/text_view"
             android:layout_alignLeft="@+id/loading_spinner"
             android:clickable="true"
-            android:divider="@color/background"/>
+            android:divider="@color/background"
+            android:layout_alignBottom="@+id/weather_icon"/>
+
+        <ProgressBar android:id="@+id/loading_spinner"
+                     style="?android:progressBarStyleLarge"
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:layout_gravity="center"
+                     android:indeterminate="false"/>
 
         <ImageView
-                android:layout_width="120dp"
-                android:layout_height="120dp"
+                android:layout_width="200dp"
+                android:layout_height="200dp"
                 android:id="@+id/weather_icon"
                 android:layout_alignParentEnd="false"
                 android:contentDescription="weathericon"
-                android:layout_marginTop="13dp"
-                android:layout_below="@+id/loading_spinner"
-                android:layout_alignParentRight="true"/>
+                android:src="@drawable/drizzle"
+                android:layout_below="@+id/text_view"
+                android:layout_alignParentRight="true"
+                android:layout_toRightOf="@+id/loading_spinner"/>
 
         <LinearLayout
                 android:orientation="vertical"
@@ -87,10 +91,23 @@
 
             <FrameLayout
                     android:layout_width="fill_parent"
-                    android:layout_height="250dp"
-                    android:measureAllChildren="true">
+                    android:layout_height="208dp"
+                    android:measureAllChildren="true"
+                    android:paddingBottom="20dp">
 
             </FrameLayout>
+
+            <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/last_updated"
+                    android:layout_gravity="right"
+                    android:text="updated @"
+                    android:textSize="10sp"
+                    android:inputType="text"
+                    android:singleLine="true"
+                    />
+
         </LinearLayout>
 
     </RelativeLayout>

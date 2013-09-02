@@ -59,56 +59,20 @@ public class MainActivity extends Activity {
     private static long updateForecastDefaultDelay = 5000;
     private static long updateDisplayDefaultDelay = 1000;
 
-    private double oldLong, oldLat;
-
     /* loading layout variables */
     private boolean contentLoaded = false;
 
-    private class WeatherListener implements LocationListener {
-        @Override
-        public void onLocationChanged(Location loc) {
-
-            location = loc;
-            Log.i(TAG, loc.getLatitude() + "," + loc.getLongitude());
-
-            if (loc.getLongitude() != oldLong || loc.getLatitude() != oldLat) {
-                oldLong = loc.getLongitude();
-                oldLat = loc.getLatitude();
-
-                updateForecast(); // Allow update until I know how to optimize
-                updateGeoLocation();
-            }
-        }
-
-        @Override
-        public void onStatusChanged(String s, int i, Bundle bundle) {
-        }
-        @Override
-        public void onProviderEnabled(String s) {
-        }
-        @Override
-        public void onProviderDisabled(String s) {
-        }
-    }
-
-
+    private UserLocationManager mWeatherListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        LocationManager locationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
-        WeatherListener weatherListener = new WeatherListener();
+        // Start the GPS listener
+        mWeatherListener = new UserLocationManager(this);
 
-        try {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, weatherListener);
-//            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, weatherListener);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        //updateForecast();
+        //updateForecast();  // not needed?
         updateGeoLocation();
 
         // draw initial graph
@@ -134,6 +98,13 @@ public class MainActivity extends Activity {
         graphView.setManualYAxisBounds(100,0);
         LinearLayout layout = (LinearLayout) findViewById(R.id.graph1);
         layout.addView(graphView);
+    }
+
+    // set the location from the GPS (this is a call-back)
+    public void setLocation( Location loc){
+        location = loc;
+        updateForecast();
+        updateGeoLocation();
     }
 
     /**
@@ -317,7 +288,6 @@ public class MainActivity extends Activity {
 
                         // Get the current conditions strings
                         String[] conditions = new String[]{
-                                formattedTime.toString(),
                                 minutelySummaryString[0],
                                 currentForecast.getString("summary") + " currently.",
                                 //currentForecast.getString("precipIntensity"),
@@ -327,14 +297,18 @@ public class MainActivity extends Activity {
                                 //currentForecast.getString("dewPoint"),
                                 currentForecast.getString("windSpeed") + "mph bearing " + currentForecast.getString("windBearing") + "deg.",
                                 //currentForecast.getString("cloudCover"),
-                                Double.toString(Double.valueOf(currentForecast.getString("humidity"))*100) + "% humidity.",
+                                Double.toString(Double.valueOf(Math.round(Double.valueOf(currentForecast.getString("humidity"))*100000))/1000) + "% humidity.",
                                 //currentForecast.getString("pressure"),
                                 //currentForecast.getString("visibility"),
-                                currentForecast.getString("ozone") + " ozone.",
+                                currentForecast.getString("ozone") + " ozone level.",
                         };
 
                         ArrayAdapter adapter = new ArrayAdapter<String>(getApplicationContext(), R.layout.weather_info, conditions);
                         listView.setAdapter(adapter);
+
+                        TextView textView = (TextView) findViewById(R.id.last_updated);
+                        textView.setText("Last updated @ " + formattedTime.toString());
+
 
                         //Log.e(TAG, "minute summary=" + minutelySummaryString[0]);
                         //Log.e(TAG, "minute time=" + minutelySummaryString[0]);
@@ -359,7 +333,7 @@ public class MainActivity extends Activity {
                         graphView = new LineGraphView(
                                 // thisMainActivity //
                                 MainActivity.this
-                                , "Rain Chance & Intensity"
+                                , "60 minute Rain Chance & Intensity"
                         );
 
                         // add data
