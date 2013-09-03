@@ -5,27 +5,29 @@
               android:layout_width="match_parent"
               android:layout_height="match_parent">
 
-    <ListView
+    <TextView
             android:layout_width="98dp"
             android:layout_height="256dp"
             android:id="@+id/text_time"
-            android:layout_gravity="left|center_vertical"/>
+            android:layout_gravity="left|center_vertical"
+            android:text="Time"/>
 
-    <ListView
+    <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/text_precip"
             android:layout_alignParentTop="true"
             android:layout_toRightOf="@+id/text_time"
             android:layout_alignBottom="@+id/text_time"
-            />
+            android:text="Precip Chance %"/>
 
-    <ListView
+    <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/text_intense"
-            android:layout_marginLeft="90dp"
+            android:text="Precip Intensity %"
             android:layout_alignParentTop="true"
-            android:layout_toRightOf="@+id/text_time"
+            android:layout_toRightOf="@+id/text_precip"
+            android:layout_marginLeft="13dp"
             android:layout_alignBottom="@+id/text_precip"/>
 </RelativeLayout>

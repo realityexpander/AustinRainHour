@@ -214,6 +214,7 @@ public class MainActivity extends Activity {
         final Handler h = new Handler();
         final Forecast f = forecast;
 
+
         h.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -364,6 +365,35 @@ public class MainActivity extends Activity {
                         // This works, but its jumpy
                         layout.removeViewAt(0);
                         layout.addView(graphView);
+
+                        // put stuff here
+                        // Set the text for the Time / Precip Chance % / Intensity % for text views
+                        // Get 0-14, 15-29, 30-44, 45-59 minutes worse case
+                        num = 60;
+                        int minutePrecip, maxBlockPrecip, minuteIntensity, maxBlockIntensity;
+                        int minuteBlock;
+                        int precip[] = new int[4];
+                        int intensity[] = new int[4];
+                        int startBlock, endBlock;
+                        for (minuteBlock=0; minuteBlock < 3; minuteBlock++) {
+                            startBlock = (minuteBlock * 15);
+                            endBlock = ((minuteBlock + 1) * 15 ) -1;
+                            maxBlockPrecip = 0;
+                            maxBlockIntensity = 0;
+                            // Find max precip chance & intensity for each 15 minute block in the hour
+                            for (int i=startBlock; i<endBlock; i++) {
+                                minutePrecip = 100 * (Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipProbability");
+                                minuteIntensity = 100 * (Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipIntensity");
+                                if (minutePrecip > maxBlockPrecip)
+                                    maxBlockPrecip = minutePrecip;
+                                if (minuteIntensity > maxBlockIntensity)
+                                    maxBlockIntensity = minuteIntensity;
+                            }
+                            precip[minuteBlock] = maxBlockPrecip;
+                            intensity[minuteBlock] = maxBlockIntensity;
+                        }
+                        SetPrecipAndIntensity(precip, intensity);
+
 
                     } catch (JSONException e) {
                         e.printStackTrace();
