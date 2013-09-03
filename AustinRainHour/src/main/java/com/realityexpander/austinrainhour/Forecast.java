@@ -23,11 +23,13 @@ public class Forecast {
 
     private class FetchDataAsync extends AsyncTask <String, Void, HttpResponse> {
 
+        AndroidHttpClient client;
+
         @Override
         protected HttpResponse doInBackground(String... urls) {
             String link = urls[0];
             HttpGet request = new HttpGet(link);
-            AndroidHttpClient client = AndroidHttpClient.newInstance("Android");
+            client = AndroidHttpClient.newInstance("Android");
             HttpResponse response = null;
 
             try {
@@ -44,6 +46,7 @@ public class Forecast {
             } catch(Exception e) {
                 e.printStackTrace();
             }
+            client.close();
             return response;
         }
 

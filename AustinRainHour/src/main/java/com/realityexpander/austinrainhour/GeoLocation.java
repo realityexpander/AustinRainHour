@@ -25,11 +25,14 @@ public class GeoLocation {
 
     private class FetchDataAsync extends AsyncTask<String, Void, HttpResponse> {
 
+
+        AndroidHttpClient client;
+
         @Override
         protected HttpResponse doInBackground(String... urls) {
             String link = urls[0];
             HttpGet request = new HttpGet(link);
-            AndroidHttpClient client = AndroidHttpClient.newInstance("Android");
+            client = AndroidHttpClient.newInstance("Android");
             HttpResponse response = null;
 
             try {
@@ -46,6 +49,7 @@ public class GeoLocation {
             } catch(Exception e) {
                 e.printStackTrace();
             }
+            client.close();
             return response;
         }
 
@@ -66,6 +70,8 @@ public class GeoLocation {
 
     private String buildGeoNamesUrl(Double latitude, Double longitude) {
 
+        //     private final String API_URL = "http://api.geonames.org/findNearbyPlaceNameJSON?";
+        // http://api.geonames.org/findNearbyPlaceNameJSON?lat=33.2323423&lng=22.474473&username=realityexpander
         return API_URL + "lat=" + latitude.toString() + "&lng=" + longitude.toString() + "&username=" + API_GEONAMES_USERNAME;
     }
 

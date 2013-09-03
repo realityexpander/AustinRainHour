@@ -30,37 +30,30 @@
             android:layout_alignParentRight="true"
             android:textColor="#DDDDDD"
             android:textIsSelectable="false"
-            android:gravity="start"
-            android:layout_alignLeft="@+id/list_view"
-            android:textStyle="bold"/>
+            android:textStyle="bold"
+            android:ellipsize="end"
+            android:textAlignment="gravity"
+            android:gravity="end"
+            android:layout_alignParentLeft="true"/>
+
+        <ImageView
+                android:layout_width="150dp"
+                android:layout_height="150dp"
+                android:id="@+id/weather_icon"
+                android:layout_alignParentEnd="false"
+                android:contentDescription="weathericon"
+                android:src="@android:drawable/stat_notify_sync"
+                android:layout_below="@+id/text_view"
+                android:layout_alignParentLeft="true"/>
 
         <ListView
             android:id="@+id/list_view"
             android:layout_width="wrap_content"
             android:layout_height="200dp"
             android:layout_below="@+id/text_view"
-            android:layout_alignLeft="@+id/loading_spinner"
             android:clickable="true"
             android:divider="@color/background"
-            android:layout_alignBottom="@+id/weather_icon"/>
-
-        <ProgressBar android:id="@+id/loading_spinner"
-                     style="?android:progressBarStyleLarge"
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:indeterminate="false"/>
-
-        <ImageView
-                android:layout_width="200dp"
-                android:layout_height="200dp"
-                android:id="@+id/weather_icon"
-                android:layout_alignParentEnd="false"
-                android:contentDescription="weathericon"
-                android:src="@drawable/drizzle"
-                android:layout_below="@+id/text_view"
-                android:layout_alignParentRight="true"
-                android:layout_toRightOf="@+id/loading_spinner"/>
+            android:layout_toRightOf="@+id/weather_icon"/>
 
         <LinearLayout
                 android:orientation="vertical"
@@ -79,34 +72,48 @@
                 android:layout_alignParentStart="true">
         </LinearLayout>
 
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/last_updated"
+                android:layout_gravity="right"
+                android:text="updated @"
+                android:textSize="10sp"
+                android:inputType="textNoSuggestions|none"
+                android:singleLine="true"
+                android:layout_alignParentBottom="true"
+                android:ellipsize="end"
+                android:textColor="#AAAAAA"
+                android:gravity="right"
+                android:textAlignment="gravity"
+                android:layout_alignRight="@+id/list_view"/>
+
         <LinearLayout
                 android:layout_width="fill_parent"
                 android:layout_height="250dp"
                 android:minHeight="250dp"
-                android:layout_marginBottom="5dp"
                 android:layout_alignParentEnd="false"
                 android:orientation="vertical"
                 android:id="@+id/bottom_layout"
-                android:layout_below="@+id/list_view">
+                android:layout_below="@+id/list_view"
+                android:layout_above="@+id/last_updated">
 
             <FrameLayout
                     android:layout_width="fill_parent"
                     android:layout_height="208dp"
                     android:measureAllChildren="true"
-                    android:paddingBottom="20dp">
+                    android:paddingBottom="20dp"
+                    android:layout_marginTop="18dp">
 
+                <ProgressBar android:id="@+id/loading_spinner"
+                             style="?android:progressBarStyleLarge"
+                             android:layout_width="wrap_content"
+                             android:layout_height="wrap_content"
+                             android:layout_gravity="center_horizontal|top"
+                             android:indeterminate="false"
+                             android:layout_alignParentTop="true"
+                             android:layout_centerHorizontal="true"/>
             </FrameLayout>
-
-            <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/last_updated"
-                    android:layout_gravity="right"
-                    android:text="updated @"
-                    android:textSize="10sp"
-                    android:inputType="text"
-                    android:singleLine="true"
-                    />
 
         </LinearLayout>
 

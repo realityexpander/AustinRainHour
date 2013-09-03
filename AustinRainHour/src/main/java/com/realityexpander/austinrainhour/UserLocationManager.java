@@ -38,7 +38,6 @@ public class UserLocationManager implements LocationListener {
         if (loc.getLongitude() != oldLong || loc.getLatitude() != oldLat) {
             oldLong = loc.getLongitude();
             oldLat = loc.getLatitude();
-
             mMainActivity.setLocation(loc);
         }
     }
