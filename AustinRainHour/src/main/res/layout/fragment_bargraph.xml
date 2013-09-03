@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+    <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="334dp"
+            android:layout_height="250dp"
+            android:id="@+id/linearLayout"
+            android:minHeight="250dp"
+            android:layout_marginTop="5dp"
+            android:measureWithLargestChild="false"
+            android:layout_below="@+id/list_view"
+            android:layout_alignParentBottom="false"
+            android:layout_alignWithParentIfMissing="false"
+            android:gravity="bottom"
+            android:layout_alignBottom="@+id/bottom_layout"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentStart="true"
+            />
+</LinearLayout>
