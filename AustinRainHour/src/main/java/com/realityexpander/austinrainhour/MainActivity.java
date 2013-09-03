@@ -63,6 +63,7 @@ public class MainActivity extends Activity {
     private boolean contentLoaded = false;
 
     private UserLocationManager mWeatherListener;
+    private int asldkfj = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
