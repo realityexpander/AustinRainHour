@@ -1,6 +1,8 @@
 package com.realityexpander.austinrainhour;
 
 import android.app.Activity;
+import android.app.Fragment;
+import android.app.FragmentManager;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -10,8 +12,10 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -33,7 +37,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements FragmentManager.OnBackStackChangedListener {
 
     /* API variables */
     private final String API_KEY = "e432b91f50911786e5653ab22eb3073a";
@@ -63,7 +67,24 @@ public class MainActivity extends Activity {
     private boolean contentLoaded = false;
 
     private UserLocationManager mWeatherListener;
-    private int asldkfj = 1;
+
+
+
+
+
+
+
+
+
+
+
+    // Card flip stuff
+    private static boolean mShowingBack = false;
+
+    /**
+     * A handler object, used for deferring UI operations.
+     */
+    private Handler mHandler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,30 +97,68 @@ public class MainActivity extends Activity {
         updateForecast(0);  // not needed?
         updateGeoLocation(0);
 
-        // draw initial graph
-        int num = 60;
-        GraphView.GraphViewData[] data = new GraphView.GraphViewData[num];
-        for (int i=0; i<num; i++) {
-            data[i] = new GraphView.GraphViewData(i, 0);
+//            context = MyApplication.getAppContext();
+
+        if (savedInstanceState == null) {
+
+            getFragmentManager()
+                    .beginTransaction()
+                    .add(R.id.bar_graph_fragment, new BarGraphFragment())
+                    .commit();
+        } else {
+            mShowingBack = (getFragmentManager().getBackStackEntryCount() > 0);
         }
-        // graph with dynamically generated horizontal and vertical labels
-        GraphView graphView;
-        graphView = new LineGraphView(
-                this
-                , "Chance of Rain %"
-        );
-        // add data
-        graphView.addSeries(new GraphViewSeries(data));
-        ((LineGraphView) graphView).setBackgroundColor(0xFFFFFF);
-        ((LineGraphView) graphView).setDrawBackground(true);
-        // set view port, start=0, size=60
-        graphView.setViewPort(0, 59);
-        graphView.setScrollable(true);
-        graphView.getGraphViewStyle().setTextSize(10);
-        graphView.setManualYAxisBounds(100,0);
-        LinearLayout layout = (LinearLayout) findViewById(R.id.graph1);
-        layout.addView(graphView);
+
+        getFragmentManager().addOnBackStackChangedListener(this);
+
     }
+
+    private void flipCard() {
+        if (mShowingBack) {
+            getFragmentManager().popBackStack();
+            return;
+        }
+
+        // Flip to the back.
+        mShowingBack = true;
+
+        // Create and commit a new fragment transaction that adds the fragment for the back of
+        // the card, uses custom animations, and is part of the fragment manager's back stack.
+        getFragmentManager()
+                .beginTransaction()
+
+                .setCustomAnimations(
+                        R.animator.card_flip_right_in, R.animator.card_flip_right_out,
+                        R.animator.card_flip_left_in, R.animator.card_flip_left_out)
+                .replace(R.id.bar_graph_fragment, new WeatherInfoFragment())
+                .addToBackStack(null)
+                .commit();
+
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                invalidateOptionsMenu();
+            }
+        });
+    }
+
+    @Override
+    public void onBackStackChanged() {
+        mShowingBack = (getFragmentManager().getBackStackEntryCount() > 0);
+
+        // When the back stack changes, invalidate the options menu (action bar).
+        invalidateOptionsMenu();
+    }
+
+
+
+
+
+
+
+
+
+
 
     // set the location from the GPS (this is a call-back)
     public void setLocation( Location loc){
@@ -197,7 +256,7 @@ public class MainActivity extends Activity {
                         //else
                         locationName =
                                 currentLocation.getJSONArray("geonames").getJSONObject(0).getString("name") + ", " +
-                                currentLocation.getJSONArray("geonames").getJSONObject(0).getString("adminCode1");
+                                        currentLocation.getJSONArray("geonames").getJSONObject(0).getString("adminCode1");
                         textView.setText(locationName);
                     } catch (JSONException e) {
                         e.printStackTrace();
