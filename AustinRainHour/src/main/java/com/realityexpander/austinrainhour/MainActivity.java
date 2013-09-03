@@ -17,6 +17,7 @@ import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -76,7 +77,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
 
 
 
-
+    public WeatherInfoFragment weatherInfoFragment = new WeatherInfoFragment();
 
     // Card flip stuff
     private static boolean mShowingBack = false;
@@ -103,7 +104,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
 
             getFragmentManager()
                     .beginTransaction()
-                    .add(R.id.bar_graph_fragment, new BarGraphFragment())
+                    .add(R.id.graph1, new BarGraphFragment())
                     .commit();
         } else {
             mShowingBack = (getFragmentManager().getBackStackEntryCount() > 0);
@@ -113,7 +114,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
 
     }
 
-    private void flipCard() {
+    public void flipCard() {
         if (mShowingBack) {
             getFragmentManager().popBackStack();
             return;
@@ -130,7 +131,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                 .setCustomAnimations(
                         R.animator.card_flip_right_in, R.animator.card_flip_right_out,
                         R.animator.card_flip_left_in, R.animator.card_flip_left_out)
-                .replace(R.id.bar_graph_fragment, new WeatherInfoFragment())
+                .replace(R.id.graph1, weatherInfoFragment)
                 .addToBackStack(null)
                 .commit();
 
@@ -150,7 +151,77 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
         invalidateOptionsMenu();
     }
 
+    /**
+     * Created by Kin on 9/3/13.
+     */
+    public class BarGraphFragment extends Fragment {
 
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                 Bundle savedInstanceState) {
+            View rootView = inflater.inflate(R.layout.fragment_bargraph, container, false);
+
+            // draw initial graph
+            int num = 60;
+            GraphView.GraphViewData[] data = new GraphView.GraphViewData[num];
+            for(int i=0; i<num; i++) {
+                data[i] = new GraphView.GraphViewData(i, 0);
+            }
+            // graph with dynamically generated horizontal and vertical labels
+            GraphView graphView;
+            graphView = new LineGraphView(getActivity(), "Chance of Rain %");
+            // add data
+            graphView.addSeries(new GraphViewSeries(data));
+            ((LineGraphView) graphView).setBackgroundColor(0xFFFFFF);
+            ((LineGraphView) graphView).setDrawBackground(true);
+            // set view port, start=0, size=60
+            graphView.setViewPort(0, 59);
+            graphView.setScrollable(true);
+            graphView.getGraphViewStyle().setTextSize(10);
+            graphView.setManualYAxisBounds(100,0);
+            LinearLayout layout = (LinearLayout) rootView.findViewById(R.id.linearLayout);
+            layout.addView(graphView);
+
+
+
+            return rootView;
+        }
+    }
+
+    /**
+     * Created by Kin on 9/3/13.
+     */
+    public class WeatherInfoFragment extends Fragment {
+
+        int precip[];
+        int intensity[];
+
+        TextView textView;
+
+        public WeatherInfoFragment(){
+        }
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                 Bundle savedInstanceState) {
+            View rootView = inflater.inflate(R.layout.fragment_time_prob_intense, container, false);
+
+            // text_time, text_precip, text_intense
+            textView = (TextView) rootView.findViewById(R.id.text_time);
+            textView.setText("Time\nNow\n+15 min\n+30 min\n+45 min\n");
+            textView = (TextView) rootView.findViewById(R.id.text_precip);
+            textView.setText("Precip Chance\n" + precip[0]+"%\n"+ precip[1]+"%\n"+ precip[2]+"%\n" + precip[3]+"%\n");
+            textView = (TextView) rootView.findViewById(R.id.text_intense);
+            textView.setText("Intensity\n" + intensity[0]+"%\n"+ intensity[1]+"%\n"+ intensity[2]+"%\n" + intensity[3]+"%\n");
+
+            return rootView;
+        }
+
+        public void SetPrecipAndIntensity(int[] curPrecip, int[] curIntensity){
+            precip = curPrecip;
+            intensity = curIntensity;
+        }
+    }
 
 
 
@@ -413,6 +484,14 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                         graphView.setManualYAxis(true);
 
                         LinearLayout layout = (LinearLayout) findViewById(R.id.graph1);
+
+                        FrameLayout frameLayout = (FrameLayout) findViewById(R.id.frame_layout);
+                        frameLayout.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                flipCard();
+                            }
+                        });
                         //layout.addView(graphView);
                         //spinner.setVisibility(View.GONE);
                         //layout.setVisibility(View.INVISIBLE);
@@ -422,8 +501,8 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                         //layout.setVisibility(View.VISIBLE);
 
                         // This works, but its jumpy
-                        layout.removeViewAt(0);
-                        layout.addView(graphView);
+//                        layout.removeViewAt(0);
+//                        layout.addView(graphView);
 
                         // put stuff here
                         // Set the text for the Time / Precip Chance % / Intensity % for text views
@@ -441,8 +520,8 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                             maxBlockIntensity = 0;
                             // Find max precip chance & intensity for each 15 minute block in the hour
                             for (int i=startBlock; i<endBlock; i++) {
-                                minutePrecip = 100 * (Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipProbability");
-                                minuteIntensity = 100 * (Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipIntensity");
+                                minutePrecip = 100 * Math.round(Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipProbability")));
+                                minuteIntensity = 100 * Math.round(Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipIntensity")));
                                 if (minutePrecip > maxBlockPrecip)
                                     maxBlockPrecip = minutePrecip;
                                 if (minuteIntensity > maxBlockIntensity)
@@ -451,7 +530,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                             precip[minuteBlock] = maxBlockPrecip;
                             intensity[minuteBlock] = maxBlockIntensity;
                         }
-                        SetPrecipAndIntensity(precip, intensity);
+                        weatherInfoFragment.SetPrecipAndIntensity(precip, intensity);
 
 
                     } catch (JSONException e) {
