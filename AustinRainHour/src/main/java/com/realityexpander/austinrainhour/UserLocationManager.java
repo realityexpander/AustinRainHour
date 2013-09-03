@@ -10,6 +10,8 @@ import android.util.Log;
 /**
  * Created by realityexpander on 8/30/13.
  */
+// http://developer.android.com/guide/topics/location/strategies.html
+
 public class UserLocationManager implements LocationListener {
 
     private double oldLong, oldLat;
@@ -22,10 +24,17 @@ public class UserLocationManager implements LocationListener {
 
         try {
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-            //locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+
+        Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        if (lastKnownLocation == null)
+            lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        mMainActivity.setLocation(lastKnownLocation);
+
     }
 
     @Override

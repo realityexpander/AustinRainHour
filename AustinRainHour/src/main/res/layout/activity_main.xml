@@ -42,7 +42,6 @@
                 android:id="@+id/weather_icon"
                 android:layout_alignParentEnd="false"
                 android:contentDescription="weathericon"
-                android:src="@android:drawable/stat_notify_sync"
                 android:layout_below="@+id/text_view"
                 android:layout_alignParentLeft="true"/>
 

@@ -72,8 +72,8 @@ public class MainActivity extends Activity {
         // Start the GPS listener
         mWeatherListener = new UserLocationManager(this);
 
-        //updateForecast();  // not needed?
-        updateGeoLocation();
+        updateForecast(0);  // not needed?
+        updateGeoLocation(0);
 
         // draw initial graph
         int num = 60;
@@ -103,8 +103,8 @@ public class MainActivity extends Activity {
     // set the location from the GPS (this is a call-back)
     public void setLocation( Location loc){
         location = loc;
-        updateForecast();
-        updateGeoLocation();
+        updateForecast(0);
+        updateGeoLocation(0);
     }
 
     /**
