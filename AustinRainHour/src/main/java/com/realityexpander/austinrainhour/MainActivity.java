@@ -69,14 +69,6 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
 
     private UserLocationManager mWeatherListener;
 
-
-
-
-
-
-
-
-
     public WeatherInfoFragment weatherInfoFragment = new WeatherInfoFragment();
 
     // Card flip stuff
@@ -520,8 +512,8 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                             maxBlockIntensity = 0;
                             // Find max precip chance & intensity for each 15 minute block in the hour
                             for (int i=startBlock; i<endBlock; i++) {
-                                minutePrecip = 100 * Math.round(Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipProbability")));
-                                minuteIntensity = 100 * Math.round(Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipIntensity")));
+                                minutePrecip =  Math.round(100 * Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipProbability")));
+                                minuteIntensity = Math.round(100 * Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipIntensity")));
                                 if (minutePrecip > maxBlockPrecip)
                                     maxBlockPrecip = minutePrecip;
                                 if (minuteIntensity > maxBlockIntensity)
