@@ -26,6 +26,7 @@ local.properties
 .idea/
 .gradle
 /*/local.properties
+out/
 /*/out
 /*/*/build
 /*/build
