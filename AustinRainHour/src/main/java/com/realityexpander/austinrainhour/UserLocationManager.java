@@ -42,7 +42,7 @@ public class UserLocationManager implements LocationListener {
 
         Log.i("UserLocationManager=", loc.getLatitude() + "," + loc.getLongitude());
 
-        // Add time >15 min, do update
+        // TODO Add time >15 min, do update
         // Spawn notification if inclement weather is within next hour
         if (loc.getLongitude() != oldLong || loc.getLatitude() != oldLat) {
             oldLong = loc.getLongitude();

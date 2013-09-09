@@ -63,6 +63,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
     protected Location location;
     private static long updateForecastDefaultDelay = 5000;
     private static long updateDisplayDefaultDelay = 1000;
+    public static Location currentLocation;
 
     /* loading layout variables */
     private boolean contentLoaded = false;
@@ -214,11 +215,6 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
             intensity = curIntensity;
         }
     }
-
-
-
-
-
 
 
 
