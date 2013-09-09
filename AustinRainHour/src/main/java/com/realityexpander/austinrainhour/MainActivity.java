@@ -478,13 +478,16 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                         LinearLayout layout = (LinearLayout) findViewById(R.id.graph1);
 
                         FrameLayout frameLayout = (FrameLayout) findViewById(R.id.frame_layout);
+                        layout.removeViewAt(0);
+                        layout.addView(graphView);
                         frameLayout.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
                                 flipCard();
                             }
                         });
-                        //layout.addView(graphView);
+
+
                         //spinner.setVisibility(View.GONE);
                         //layout.setVisibility(View.INVISIBLE);
 
