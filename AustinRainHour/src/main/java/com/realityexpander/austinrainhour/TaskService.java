@@ -7,6 +7,7 @@ package com.realityexpander.austinrainhour;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -48,9 +49,11 @@ public class TaskService extends Service {
 	private Handler handler;
 	private Runnable r;
 	private boolean runrunnable = true;
+    public static MainActivity mMainActivity; // TODO Need a better way to pass location back to MainActivity
 	
 	/** Called when the activity is first created. */
-	private void startLocationService(MainActivity m) {
+	private void startLocationService() {
+
 		lm = (LocationManager) getSystemService(LOCATION_SERVICE);
 
 		locationListener = new MyLocationListener();
@@ -62,13 +65,15 @@ public class TaskService extends Service {
 
 		Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
-        MainActivity.currentLocation = location;
-        m.setLocation(currentLocation);
+        mMainActivity = MainActivity.mMainActivity;
+
+        //MainActivity.currentLocation = location;
+        mMainActivity.setLocation(location);
 
 // CDA Prob not needed
 //		mDbHelper = new TasksDbAdapter(this); // open sql connection
 //		mDbHelper.open();
-		update_locations(); // update locations from sql
+//		update_locations(); // update locations from sql
 		
 		handler=new Handler();
 		Runnable r = new Runnable()
@@ -98,13 +103,13 @@ public class TaskService extends Service {
 	public class MyLocationListener implements LocationListener {
 		@Override
 		public void onLocationChanged(Location location) {
-			MainActivity.currentLocation = location;
 
 			//if location changes (except first time) more than DISTANCE_CHANGE meters - update
 			if (location != null) {
 				//Check distance to all tasks
 				//checkTasks(location);
                 // TODO Update the forecast and geolocation here
+                mMainActivity.setLocation(location);
 
 				if (showingDebugToast) Toast.makeText(getBaseContext(),
 						"Location stored: \nLat: " + location.getLatitude() + 
@@ -145,22 +150,13 @@ public class TaskService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-
-		mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-
-		if (showingDebugToast) {
-			Toast.makeText(this, "Location service started",
-					Toast.LENGTH_SHORT).show();
-		}
-
-		Log.d(tag, "started service");
-		startLocationService();
+		Log.d(tag, "created taskService");
 	}
 
 	
 	/* Update the monitored locations arraylist */
 	public void update_locations() {
-        // TODO update the forecast here?
+        // TODO update the forecast here? no.
 		//Get locations to monitor
 //		if (TasksDbAdapter.updated) {
 //			task_locations = mDbHelper.fetchAllGpsLocationsWithTasks();
@@ -169,7 +165,7 @@ public class TaskService extends Service {
 //		}
 	}
 
-	
+	// TODO do the inclement weather notification here?
 	/* Check distances to all locations with tasks. */
 	public void checkTasks(Location location) {   	
 // CDA prob not needed
@@ -214,6 +210,17 @@ public class TaskService extends Service {
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.i("LocalService", "Received start id " + startId + ": " + intent);
+
+        mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+
+        if (showingDebugToast) {
+            Toast.makeText(this, "Location service started",
+                    Toast.LENGTH_SHORT).show();
+        }
+
+        Log.d(tag, "started service");
+        startLocationService();
+
 		// We want this service to continue running until it is explicitly
 		// stopped, so return sticky.
 		return START_STICKY;
@@ -221,7 +228,8 @@ public class TaskService extends Service {
 
 	@Override
 	public void onDestroy() {		
-		mNM.cancel(R.string.local_service_started);
+		//mNM.cancel(R.string.local_service_started);
+		mNM.cancel(0);
 
 		shutdownLocationService();
 

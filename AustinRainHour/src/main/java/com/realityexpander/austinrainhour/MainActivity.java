@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
@@ -36,6 +37,7 @@ import org.json.JSONObject;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 
 public class MainActivity extends Activity implements FragmentManager.OnBackStackChangedListener {
@@ -68,12 +70,14 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
     /* loading layout variables */
     private boolean contentLoaded = false;
 
-    private UserLocationManager mWeatherListener;
+    //private UserLocationManager mWeatherListener;
 
     public WeatherInfoFragment weatherInfoFragment = new WeatherInfoFragment();
 
     // Card flip stuff
     private static boolean mShowingBack = false;
+
+    public static MainActivity mMainActivity;
 
     /**
      * A handler object, used for deferring UI operations.
@@ -86,12 +90,13 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
         setContentView(R.layout.activity_main);
 
         // Start the GPS listener
-        mWeatherListener = new UserLocationManager(this);
+        //mWeatherListener = new UserLocationManager(this);
+
+        mMainActivity = MainActivity.this;
+        startService(new Intent(MainActivity.this, TaskService.class));
 
         updateForecast(0);  // not needed?
         updateGeoLocation(0);
-
-//            context = MyApplication.getAppContext();
 
         if (savedInstanceState == null) {
 
@@ -174,8 +179,6 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
             graphView.setManualYAxisBounds(100,0);
             LinearLayout layout = (LinearLayout) rootView.findViewById(R.id.linearLayout);
             layout.addView(graphView);
-
-
 
             return rootView;
         }
@@ -406,6 +409,8 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                             Log.e(TAG, "Problem parsing weather type" + minutelySummaryString[0]);
                         }
 
+                        // TODO if the weather is inclement for the next hour, put up a notification
+
                         // Get the current conditions strings
                         String[] conditions = new String[]{
                                 minutelySummaryString[0],
@@ -474,7 +479,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                         LinearLayout layout = (LinearLayout) findViewById(R.id.graph1);
 
                         FrameLayout frameLayout = (FrameLayout) findViewById(R.id.frame_layout);
-                        layout.removeViewAt(0);
+                        layout.removeView(layout);
                         layout.addView(graphView);
                         frameLayout.setOnClickListener(new View.OnClickListener() {
                             @Override
