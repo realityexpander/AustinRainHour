@@ -15,25 +15,26 @@ import android.util.Log;
 public class UserLocationManager implements LocationListener {
 
     private double oldLong, oldLat;
-    private MainActivity mMainActivity;
+    //private MainActivity mMainActivity; // bad
 
     public UserLocationManager(MainActivity m) {
-        mMainActivity = m;
+       // mMainActivity = m; // bad
 
-        LocationManager locationManager = (LocationManager)mMainActivity.getSystemService(Context.LOCATION_SERVICE);
+//        LocationManager locationManager = (LocationManager)mMainActivity.getSystemService(Context.LOCATION_SERVICE);
+//
+//        try {
+//            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+//            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//
+//        Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+//        //Location lastKnownLocation = null;
+//        if (lastKnownLocation == null)
+//            lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+//        //mMainActivity.setLocation(lastKnownLocation); // bad
 
-        try {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
-        Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-        if (lastKnownLocation == null)
-            lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        mMainActivity.setLocation(lastKnownLocation);
 
     }
 
@@ -47,7 +48,7 @@ public class UserLocationManager implements LocationListener {
         if (loc.getLongitude() != oldLong || loc.getLatitude() != oldLat) {
             oldLong = loc.getLongitude();
             oldLat = loc.getLatitude();
-            mMainActivity.setLocation(loc);
+            //mMainActivity.setLocation(loc);  // bad
         }
     }
 

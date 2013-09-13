@@ -28,7 +28,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".TaskService"
+
+        <service android:name=".GPSService"
                  android:label="@string/service_name" android:exported="true"
                  android:enabled="true">
         </service>

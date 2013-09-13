@@ -3,12 +3,13 @@ package com.realityexpander.austinrainhour;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -37,7 +38,6 @@ import org.json.JSONObject;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 
 
 public class MainActivity extends Activity implements FragmentManager.OnBackStackChangedListener {
@@ -67,17 +67,25 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
     private static long updateDisplayDefaultDelay = 1000;
     public static Location currentLocation;
 
+    // Graphview stuff
+    private GraphView graphView;
+    private GraphView.GraphViewData[] data;
+    private GraphViewSeries seriesRainChance;
+    private GraphViewSeries seriesRainIntensity;
+    private GraphView.GraphViewData[] dataRainSeries;
+    private GraphView.GraphViewData[] dataRainIntensity;
+    final int NUM_MINUTES = 60;
+
     /* loading layout variables */
     private boolean contentLoaded = false;
 
     //private UserLocationManager mWeatherListener;
-
     public WeatherInfoFragment weatherInfoFragment = new WeatherInfoFragment();
 
     // Card flip stuff
     private static boolean mShowingBack = false;
 
-    public static MainActivity mMainActivity;
+    private LatLongBroadcastReceiver latLongBroadcastReceiver;
 
     /**
      * A handler object, used for deferring UI operations.
@@ -89,15 +97,15 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Start the GPS listener
-        //mWeatherListener = new UserLocationManager(this);
+        // Init the weather data
+        dataRainSeries = new GraphView.GraphViewData[NUM_MINUTES];
+        dataRainIntensity = new GraphView.GraphViewData[NUM_MINUTES];
+        for(int i=0; i<NUM_MINUTES; i++) {
+            dataRainSeries[i] = new GraphView.GraphViewData(i, 0);
+            dataRainIntensity[i] = new GraphView.GraphViewData(i, 0);
+        }
 
-        mMainActivity = MainActivity.this;
-        startService(new Intent(MainActivity.this, TaskService.class));
-
-        updateForecast(0);  // not needed?
-        updateGeoLocation(0);
-
+        // Prepare the animated view frame
         if (savedInstanceState == null) {
 
             getFragmentManager()
@@ -107,9 +115,49 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
         } else {
             mShowingBack = (getFragmentManager().getBackStackEntryCount() > 0);
         }
-
         getFragmentManager().addOnBackStackChangedListener(this);
 
+        location = new Location(LocationManager.GPS_PROVIDER); // fill with default values
+
+        // Start the listener from GPS service
+        latLongBroadcastReceiver = new LatLongBroadcastReceiver();
+
+        // Start the GPS listener service
+        startService(new Intent(MainActivity.this, GPSService.class));
+
+    }
+
+    public class LatLongBroadcastReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Double lat;
+            Double lng;
+
+            lat = intent.getDoubleExtra("lat", 0);
+            lng = intent.getDoubleExtra("lng", 0);
+
+            if(location == null)
+                location = new Location(LocationManager.GPS_PROVIDER);
+            location.setLatitude(lat);
+            location.setLongitude(lng);
+//            setLocation(location);
+            updateForecast(0);
+            updateGeoLocation(0);
+        }
+
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();  // Always call the superclass method first
+        this.unregisterReceiver(latLongBroadcastReceiver);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        this.registerReceiver(latLongBroadcastReceiver, new IntentFilter("LatLong"));
     }
 
     public void flipCard() {
@@ -159,25 +207,27 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                                  Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_bargraph, container, false);
 
-            // draw initial graph
-            int num = 60;
-            GraphView.GraphViewData[] data = new GraphView.GraphViewData[num];
-            for(int i=0; i<num; i++) {
-                data[i] = new GraphView.GraphViewData(i, 0);
-            }
-            // graph with dynamically generated horizontal and vertical labels
-            GraphView graphView;
-            graphView = new LineGraphView(getActivity(), "Chance of Rain %");
-            // add data
-            graphView.addSeries(new GraphViewSeries(data));
-            ((LineGraphView) graphView).setBackgroundColor(0xFFFFFF);
+            // draw current graph
+            graphView = new LineGraphView(
+                    getActivity(),
+                    "60 minute Rain Chance & Intensity"
+            );
+            seriesRainChance = new GraphViewSeries("% Chance", new GraphViewSeries.GraphViewSeriesStyle(Color.rgb(20, 20, 230), 3), dataRainSeries);
+            seriesRainIntensity = new GraphViewSeries("Intensity", new GraphViewSeries.GraphViewSeriesStyle(Color.rgb(230, 230, 30), 3), dataRainIntensity);
+
+            ((LineGraphView) graphView).setBackgroundColor(Color.rgb(40, 40, 150));
             ((LineGraphView) graphView).setDrawBackground(true);
-            // set view port, start=0, size=60
+            graphView.addSeries(seriesRainChance);
+
+            graphView.addSeries(seriesRainIntensity);
+
             graphView.setViewPort(0, 59);
-            graphView.setScrollable(true);
+            graphView.setScrollable(false);
+            graphView.setShowLegend(true);
             graphView.getGraphViewStyle().setTextSize(10);
             graphView.setManualYAxisBounds(100,0);
-            LinearLayout layout = (LinearLayout) rootView.findViewById(R.id.linearLayout);
+            graphView.setManualYAxis(true);
+            LinearLayout layout = (LinearLayout) rootView.findViewById(R.id.linearLayout); // Use the fragment layout
             layout.addView(graphView);
 
             return rootView;
@@ -204,11 +254,13 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
 
             // text_time, text_precip, text_intense
             textView = (TextView) rootView.findViewById(R.id.text_time);
-            textView.setText("Time\nNow\n+15 min\n+30 min\n+45 min\n");
+            textView.setText("Time\n+10 min\n+20 min\n+30 min\n+40 min\n+50 min\n+60 min");
             textView = (TextView) rootView.findViewById(R.id.text_precip);
-            textView.setText("Precip Chance\n" + precip[0]+"%\n"+ precip[1]+"%\n"+ precip[2]+"%\n" + precip[3]+"%\n");
+            textView.setText("Precip Chance\n" + precip[0]+"%\n"+ precip[1]+"%\n"+ precip[2]+"%\n" + precip[3]+"%\n" +
+                    precip[4]+"%\n"+ precip[5]+"%\n" );
             textView = (TextView) rootView.findViewById(R.id.text_intense);
-            textView.setText("Intensity\n" + intensity[0]+"%\n"+ intensity[1]+"%\n"+ intensity[2]+"%\n" + intensity[3]+"%\n");
+            textView.setText("Intensity\n" + intensity[0]+"%\n"+ intensity[1]+"%\n"+ intensity[2]+"%\n" + intensity[3]+"%\n" +
+                    + intensity[4]+"%\n"+ intensity[5]+"%\n");
 
             return rootView;
         }
@@ -218,9 +270,6 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
             intensity = curIntensity;
         }
     }
-
-
-
 
     // set the location from the GPS (this is a call-back)
     public void setLocation( Location loc){
@@ -319,6 +368,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                         locationName =
                                 currentLocation.getJSONArray("geonames").getJSONObject(0).getString("name") + ", " +
                                         currentLocation.getJSONArray("geonames").getJSONObject(0).getString("adminCode1");
+                        // JSONRawData->JSONNamedObject(geonames)->JSONArray[0]->JSONObject->Key=adminCode1
                         textView.setText(locationName);
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -334,7 +384,6 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
     private void updateForecastDisplay(final Forecast forecast, long interval) {
         final Handler h = new Handler();
         final Forecast f = forecast;
-
 
         h.postDelayed(new Runnable() {
             @Override
@@ -420,7 +469,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                                 currentForecast.getString("temperature") + "F.",
                                 currentForecast.getString("apparentTemperature") + "F feels like.",
                                 //currentForecast.getString("dewPoint"),
-                                currentForecast.getString("windSpeed") + "mph bearing " + currentForecast.getString("windBearing") + "deg.",
+                                currentForecast.getString("windSpeed") + "mph wind.", // + currentForecast.getString("windBearing") + "deg.",
                                 //currentForecast.getString("cloudCover"),
                                 Double.toString(Double.valueOf(Math.round(Double.valueOf(currentForecast.getString("humidity"))*100000))/1000) + "% humidity.",
                                 //currentForecast.getString("pressure"),
@@ -434,53 +483,20 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                         TextView textView = (TextView) findViewById(R.id.last_updated);
                         textView.setText("Last updated @ " + formattedTime.toString());
 
-
-                        //Log.e(TAG, "minute summary=" + minutelySummaryString[0]);
-                        //Log.e(TAG, "minute time=" + minutelySummaryString[0]);
-
                         // Data for Precipitation Probability
-                        int num = 60;
-                        GraphView.GraphViewData[] data = new GraphView.GraphViewData[num];
-                        for (int i=0; i<num; i++) {
-                            data[i] = new GraphView.GraphViewData(i, 100 * Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipProbability")));
+                        for (int i=0; i<NUM_MINUTES; i++) {
+                            dataRainSeries[i] = new GraphView.GraphViewData(i, 100 * Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipProbability")));
                         }
-                        GraphViewSeries seriesRainChance = new GraphViewSeries("% Chance", new GraphViewSeries.GraphViewSeriesStyle(Color.rgb(20, 20, 230), 3), data);
+                        seriesRainChance.resetData(dataRainSeries);
 
                         // Data for Precipitation Intensity
-                        data = new GraphView.GraphViewData[num];
-                        for (int i=0; i<num; i++) {
-                            data[i] = new GraphView.GraphViewData(i, Math.min(100, 400 * Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipIntensity"))));
+                        for (int i=0; i<NUM_MINUTES; i++) {
+                            dataRainIntensity[i] = new GraphView.GraphViewData(i, Math.min(100, 400 * Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipIntensity"))));
                         }
-                        GraphViewSeries seriesRainIntensity = new GraphViewSeries("Intensity", new GraphViewSeries.GraphViewSeriesStyle(Color.rgb(230, 230, 30), 3), data);
+                        seriesRainIntensity.resetData(dataRainIntensity);
 
-                        // graph with dynamically generated horizontal and vertical labels
-                        GraphView graphView;
-                        graphView = new LineGraphView(
-                                // thisMainActivity //
-                                MainActivity.this
-                                , "60 minute Rain Chance & Intensity"
-                        );
-
-                        // add data
-                        //graphView.addSeries(new GraphViewSeries(data));
-                        graphView.addSeries(seriesRainChance);
-                        graphView.addSeries(seriesRainIntensity);
-                        // set view port, start=0, size=60
-                        graphView.setShowLegend(true);
-                        graphView.setViewPort(0, 59);
-                        graphView.setScrollable(false);
-                        //graphView.setScalable(false);
-                        //((LineGraphView) graphView).setBackgroundColor(0xFFFFFF);
-                        ((LineGraphView) graphView).setDrawBackground(true);
-                        graphView.getGraphViewStyle().setTextSize(10);
-                        graphView.setManualYAxisBounds(100, 0);
-                        graphView.setManualYAxis(true);
-
-                        LinearLayout layout = (LinearLayout) findViewById(R.id.graph1);
-
+                        // Set the flipcard
                         FrameLayout frameLayout = (FrameLayout) findViewById(R.id.frame_layout);
-                        layout.removeView(layout);
-                        layout.addView(graphView);
                         frameLayout.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
@@ -488,33 +504,19 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                             }
                         });
 
-
-                        //spinner.setVisibility(View.GONE);
-                        //layout.setVisibility(View.INVISIBLE);
-
-                        //layout.setVisibility(layout.GONE);
-                        //layout.setVisibility(layout.VISIBLE);
-                        //layout.setVisibility(View.VISIBLE);
-
-                        // This works, but its jumpy
-//                        layout.removeViewAt(0);
-//                        layout.addView(graphView);
-
-                        // put stuff here
                         // Set the text for the Time / Precip Chance % / Intensity % for text views
-                        // Get 0-14, 15-29, 30-44, 45-59 minutes worse case
-                        num = 60;
+                        // Get every ten minutes worse case
                         int minutePrecip, maxBlockPrecip, minuteIntensity, maxBlockIntensity;
                         int minuteBlock;
-                        int precip[] = new int[4];
-                        int intensity[] = new int[4];
+                        int precip[] = new int[7];
+                        int intensity[] = new int[7];
                         int startBlock, endBlock;
-                        for (minuteBlock=0; minuteBlock < 3; minuteBlock++) {
-                            startBlock = (minuteBlock * 15);
-                            endBlock = ((minuteBlock + 1) * 15 ) -1;
+                        for (minuteBlock=0; minuteBlock < 6; minuteBlock++) {
+                            startBlock = (minuteBlock * 10);
+                            endBlock = ((minuteBlock + 1) * 10 ) -1;
                             maxBlockPrecip = 0;
                             maxBlockIntensity = 0;
-                            // Find max precip chance & intensity for each 15 minute block in the hour
+                            // Find max precip chance & intensity for each 10 minute block in the hour
                             for (int i=startBlock; i<endBlock; i++) {
                                 minutePrecip =  Math.round(100 * Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipProbability")));
                                 minuteIntensity = Math.round(100 * Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipIntensity")));
