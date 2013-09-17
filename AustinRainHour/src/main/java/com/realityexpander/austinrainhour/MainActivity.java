@@ -67,6 +67,10 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
     private static long updateDisplayDefaultDelay = 1000;
     public static Location currentLocation;
 
+    // Bundle Save/Restore Data
+    private String mLocationName;
+    private String[] mForecastStrings;
+
     // Graphview stuff
     private GraphView graphView;
     private GraphView.GraphViewData[] data;
@@ -93,6 +97,34 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
     private Handler mHandler = new Handler();
 
     @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putString("place_name", mLocationName);
+        outState.putStringArray("forecast", mForecastStrings);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+    }
+
+    @Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -117,8 +149,6 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
         }
         getFragmentManager().addOnBackStackChangedListener(this);
 
-        location = new Location(LocationManager.GPS_PROVIDER); // fill with default values
-
         // Start the listener from GPS service
         latLongBroadcastReceiver = new LatLongBroadcastReceiver();
 
@@ -126,6 +156,9 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
         startService(new Intent(MainActivity.this, GPSService.class));
 
     }
+
+//    @Override
+//    public void onOrientationChange()
 
     public class LatLongBroadcastReceiver extends BroadcastReceiver {
 
@@ -224,7 +257,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
             graphView.setViewPort(0, 59);
             graphView.setScrollable(false);
             graphView.setShowLegend(true);
-            graphView.getGraphViewStyle().setTextSize(10);
+            graphView.getGraphViewStyle().setTextSize(12);
             graphView.setManualYAxisBounds(100,0);
             graphView.setManualYAxis(true);
             LinearLayout layout = (LinearLayout) rootView.findViewById(R.id.linearLayout); // Use the fragment layout
@@ -276,6 +309,10 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
         location = loc;
         updateForecast(0);
         updateGeoLocation(0);
+    }
+
+    private String formatTemp(String input) {
+        return input.substring(0, input.indexOf('.')+2) + "\u00B0";
     }
 
     /**
@@ -360,16 +397,16 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                         ListView listView = (ListView)findViewById(R.id.list_view);
                         JSONObject currentLocation = geoLocation.getGeoNamesData();
 
-                        String locationName;
+
                         int     numItems = currentLocation.length();
                         //if (currentLocation.length() <= 2)
                         //    locationName = "Location error.";
                         //else
-                        locationName =
+                        mLocationName =
                                 currentLocation.getJSONArray("geonames").getJSONObject(0).getString("name") + ", " +
                                         currentLocation.getJSONArray("geonames").getJSONObject(0).getString("adminCode1");
                         // JSONRawData->JSONNamedObject(geonames)->JSONArray[0]->JSONObject->Key=adminCode1
-                        textView.setText(locationName);
+                        textView.setText(mLocationName);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -466,16 +503,18 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                                 currentForecast.getString("summary") + " currently.",
                                 //currentForecast.getString("precipIntensity"),
                                 //currentForecast.getString("precipProbability"),
-                                currentForecast.getString("temperature") + "F.",
-                                currentForecast.getString("apparentTemperature") + "F feels like.",
+                                formatTemp(currentForecast.getString("temperature")) + "F.",
+                                formatTemp(currentForecast.getString("apparentTemperature")) + "F feels like.",
                                 //currentForecast.getString("dewPoint"),
-                                currentForecast.getString("windSpeed") + "mph wind.", // + currentForecast.getString("windBearing") + "deg.",
+                                currentForecast.getString("windSpeed") + "mph winds.", // + currentForecast.getString("windBearing") + "deg.",
                                 //currentForecast.getString("cloudCover"),
                                 Double.toString(Double.valueOf(Math.round(Double.valueOf(currentForecast.getString("humidity"))*100000))/1000) + "% humidity.",
                                 //currentForecast.getString("pressure"),
                                 //currentForecast.getString("visibility"),
-                                currentForecast.getString("ozone") + " ozone level.",
+                                currentForecast.getString("ozone") + " ozone.",
                         };
+
+                        mForecastStrings = conditions;
 
                         ArrayAdapter adapter = new ArrayAdapter<String>(getApplicationContext(), R.layout.weather_info, conditions);
                         listView.setAdapter(adapter);

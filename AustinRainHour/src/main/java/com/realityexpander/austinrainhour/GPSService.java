@@ -8,6 +8,7 @@ package com.realityexpander.austinrainhour;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
+import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -40,23 +41,35 @@ public class GPSService extends Service {
 	private Handler handler;
 	private Runnable r;
 	private boolean runrunnable = true;
-    // BAD public static MainActivity mMainActivity; // TODO Need a better way to pass location back to MainActivity
-	
+
 	/** Called when the activity is first created. */
 	private void startLocationService() {
 
 		lm = (LocationManager) getSystemService(LOCATION_SERVICE);
 
+        //Criteria criteria = new Criteria();
+        //String provider = lm.getBestProvider(criteria, false);
+
 		locationListener = new MyLocationListener();
 
-		lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 
+		lm.requestLocationUpdates(LocationManager.GPS_PROVIDER,
 				minTimeMillis, 
 				minDistanceMeters,
 				locationListener);
 
-		Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if (location == null)
+        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        if(location!= null)
+            if (showingDebugToast) Toast.makeText(getBaseContext(), "Using GPS provider", Toast.LENGTH_SHORT).show();
+        if (location == null) {
+            lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                    minTimeMillis,
+                    minDistanceMeters,
+                    locationListener);
 		    location = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            if(location!= null)
+                if (showingDebugToast) Toast.makeText(getBaseContext(), "Using network provider", Toast.LENGTH_SHORT).show();
+
+        }
         if (location != null ) {
             Intent i = new Intent();
             i.setAction("LatLong");
@@ -65,9 +78,6 @@ public class GPSService extends Service {
             sendBroadcast(i);
         }
 
-        // BAD mMainActivity = MainActivity.mMainActivity;
-        // BAD mMainActivity.setLocation(location);
-		
 		handler=new Handler();
 		Runnable r = new Runnable()
 		{
@@ -117,21 +127,21 @@ public class GPSService extends Service {
 
 		@Override
 		public void onProviderDisabled(String provider) {
-			Toast.makeText(getBaseContext(), "GPS provider disabled", Toast.LENGTH_SHORT).show();		
+			Toast.makeText(getBaseContext(), provider + " provider disabled", Toast.LENGTH_SHORT).show();
 		}
 
 		public void onProviderEnabled(String provider) {
-			Toast.makeText(getBaseContext(), "GPS provider enabled", Toast.LENGTH_SHORT).show();
+			Toast.makeText(getBaseContext(), provider + " provider enabled", Toast.LENGTH_SHORT).show();
 		}
 
 		public void onStatusChanged(String provider, int status, Bundle extras) {
 			String showStatus = null;
 			if (status == LocationProvider.AVAILABLE)
-				showStatus = "Available";
+				showStatus = provider + " Available";
 			if (status == LocationProvider.TEMPORARILY_UNAVAILABLE)
-				showStatus = "Temporarily Unavailable";
+				showStatus = provider + " Temporarily Unavailable";
 			if (status == LocationProvider.OUT_OF_SERVICE)
-				showStatus = "Out of Service";
+				showStatus = provider + " Out of Service";
 			if (status != lastStatus && showingDebugToast) {
 				Toast.makeText(getBaseContext(),
 						"new status: " + showStatus,

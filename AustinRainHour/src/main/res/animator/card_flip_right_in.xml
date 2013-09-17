@@ -46,7 +46,7 @@
     <objectAnimator
         android:valueFrom="180"
         android:valueTo="0"
-        android:propertyName="rotationY"
+        android:propertyName="rotationX"
         android:interpolator="@android:interpolator/accelerate_decelerate"
         android:duration="@integer/card_flip_time_full" />
 
