@@ -45,52 +45,75 @@ public class GPSService extends Service {
 	/** Called when the activity is first created. */
 	private void startLocationService() {
 
-		lm = (LocationManager) getSystemService(LOCATION_SERVICE);
+        try{
+            lm = (LocationManager) getSystemService(LOCATION_SERVICE);
 
-        //Criteria criteria = new Criteria();
-        //String provider = lm.getBestProvider(criteria, false);
+            //Criteria criteria = new Criteria();
+            //String provider = lm.getBestProvider(criteria, false);
+            if (locationListener == null)
+                locationListener = new MyLocationListener();
 
-		locationListener = new MyLocationListener();
+            Location location = null;
+            if (lm == null) {
+                //if (showingDebugToast)
+                    Toast.makeText(getBaseContext(), "No Location Available", Toast.LENGTH_SHORT).show();
+            } else {
 
-		lm.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-				minTimeMillis, 
-				minDistanceMeters,
-				locationListener);
+                lm.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                        minTimeMillis,
+                        minDistanceMeters,
+                        locationListener);
+                lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                        minTimeMillis,
+                        minDistanceMeters,
+                        locationListener);
 
-        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if(location!= null)
-            if (showingDebugToast) Toast.makeText(getBaseContext(), "Using GPS provider", Toast.LENGTH_SHORT).show();
-        if (location == null) {
-            lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
-                    minTimeMillis,
-                    minDistanceMeters,
-                    locationListener);
-		    location = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            if(location!= null)
-                if (showingDebugToast) Toast.makeText(getBaseContext(), "Using network provider", Toast.LENGTH_SHORT).show();
+                // Try the GPS
+                if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)){
+                    location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                    if(location!= null)
+                        if (showingDebugToast) Toast.makeText(getBaseContext(), "GPS provider", Toast.LENGTH_SHORT).show();
+                }
 
+                // Try the network
+                if (location == null) {
+                    if (lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                        location = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                        if(location!= null)
+                            if (showingDebugToast) Toast.makeText(getBaseContext(), "Network provider", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            if( location == null )
+               // if (showingDebugToast)
+                    Toast.makeText(getBaseContext(), "No location providers", Toast.LENGTH_SHORT).show();
+
+            // If we have a fix, tell the main app
+            if (location != null ) {
+                Intent i = new Intent();
+                i.setAction("LatLong");
+                i.putExtra("lat", location.getLatitude());
+                i.putExtra("lng", location.getLongitude());
+                sendBroadcast(i);
+            }
+        } catch (Exception e) {
+            Log.e("Problem in GPSService:", "StartLocationService");
         }
-        if (location != null ) {
-            Intent i = new Intent();
-            i.setAction("LatLong");
-            i.putExtra("lat", location.getLatitude());
-            i.putExtra("lng", location.getLongitude());
-            sendBroadcast(i);
-        }
 
-		handler=new Handler();
-		Runnable r = new Runnable()
-		{
-		    public void run() 
-		    {
-		        // Not used checkTasks(MainActivity.currentLocation);  // TODO this needs to update the forecast for current GPS
-		        Log.d(tag,"Runnable");
-		        if (runrunnable)
-		        	handler.postDelayed(this, minTimeMillischange);
-		    }
-		};
-
-		handler.postDelayed(r, minTimeMillischange);
+//		handler=new Handler();
+//		Runnable r = new Runnable()
+//		{
+//		    public void run()
+//		    {
+//		        // Not used checkTasks(MainActivity.currentLocation);  // TODO this needs to update the forecast for current GPS
+//		        Log.d(tag,"Runnable");
+//		        if (runrunnable)
+//		        	handler.postDelayed(this, minTimeMillischange);
+//		    }
+//		};
+//
+//		handler.postDelayed(r, minTimeMillischange);
 	}
 
 	
@@ -99,7 +122,10 @@ public class GPSService extends Service {
 		handler.removeCallbacks(r); 
 		runrunnable = false;
 		lm.removeUpdates(locationListener);
-	}
+
+        if (showingDebugToast) Toast.makeText(getBaseContext(), "Shutdown location service", Toast.LENGTH_SHORT).show();
+
+    }
 
 	
 	public class MyLocationListener implements LocationListener {
@@ -116,12 +142,12 @@ public class GPSService extends Service {
                 i.putExtra("lng", location.getLongitude());
                 sendBroadcast(i);
 
-				if (showingDebugToast) Toast.makeText(getBaseContext(),
-						"Location stored: \nLat: " + location.getLatitude() + 
-						"\nLon: " + location.getLongitude() +
-						"\nAlt: " + (location.hasAltitude() ? location.getAltitude()+"m":"?") + 
-						"\nAcc: " + (location.hasAccuracy() ? location.getAccuracy()+"m":"?"), 
-						Toast.LENGTH_SHORT).show();
+//				if (showingDebugToast) Toast.makeText(getBaseContext(),
+//						"Location stored: \nLat: " + location.getLatitude() +
+//						"\nLon: " + location.getLongitude() +
+//						"\nAlt: " + (location.hasAltitude() ? location.getAltitude()+"m":"?") +
+//						"\nAcc: " + (location.hasAccuracy() ? location.getAccuracy()+"m":"?"),
+//						Toast.LENGTH_SHORT).show();
 			}
 		}
 
@@ -166,10 +192,9 @@ public class GPSService extends Service {
 		if (location == null ) {
 			return;
 		}
-		runrunnable = false; // stop timer
-
-		runrunnable = true;
-		handler.postDelayed(r, minTimeMillischange); // start timer
+		//runrunnable = false; // stop timer
+		//runrunnable = true;
+		//handler.postDelayed(r, minTimeMillischange); // start timer
 	}
 
 	@Override
@@ -192,15 +217,16 @@ public class GPSService extends Service {
 	}
 
 	@Override
-	public void onDestroy() {		
+	public void onDestroy() {
+
+        // Tell the user we stopped.
+        if (showingDebugToast) {
+            Toast.makeText(this, "Location service stopped", Toast.LENGTH_SHORT).show();
+        }
+
 		mNM.cancel(0);
 
-		shutdownLocationService();
-
-		// Tell the user we stopped.
-		if (showingDebugToast) {
-			Toast.makeText(this, "Location service stopped", Toast.LENGTH_SHORT).show();
-		}
+        shutdownLocationService();
 	}
 
 	private final IBinder mBinder = new LocalBinder();

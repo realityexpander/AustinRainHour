@@ -51,8 +51,10 @@ public class Forecast {
         }
 
         protected void onPostExecute(HttpResponse res){
-            status = res.getStatusLine().getStatusCode();
-            response = res;
+            if (res != null){
+                status = res.getStatusLine().getStatusCode();
+                response = res;
+            }
         }
     }
 

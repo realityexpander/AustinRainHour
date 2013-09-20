@@ -96,49 +96,50 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
      */
     private Handler mHandler = new Handler();
 
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
+//    @Override
+//    protected void onSaveInstanceState(Bundle outState) {
+//        super.onSaveInstanceState(outState);
+//
+//        outState.putString("place_name", mLocationName);
+//        outState.putStringArray("forecast", mForecastStrings);
+//    }
 
-        outState.putString("place_name", mLocationName);
-        outState.putStringArray("forecast", mForecastStrings);
-    }
+//    @Override
+//    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+//        super.onRestoreInstanceState(savedInstanceState);
+//    }
 
-    @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-    }
+//    @Override
+//    protected void onStop() {
+//        super.onStop();
+//        this.unregisterReceiver(latLongBroadcastReceiver);
+//    }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-    }
+//    @Override
+//    protected void onRestart() {
+//        super.onRestart();
+//    }
 
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-    }
-
-    @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-    }
+//    @Override
+//    protected void onPostCreate(Bundle savedInstanceState) {
+//        super.onPostCreate(savedInstanceState);
+//    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Init the weather data
-        dataRainSeries = new GraphView.GraphViewData[NUM_MINUTES];
-        dataRainIntensity = new GraphView.GraphViewData[NUM_MINUTES];
-        for(int i=0; i<NUM_MINUTES; i++) {
-            dataRainSeries[i] = new GraphView.GraphViewData(i, 0);
-            dataRainIntensity[i] = new GraphView.GraphViewData(i, 0);
-        }
-
         // Prepare the animated view frame
         if (savedInstanceState == null) {
+
+            // Init the weather data
+            dataRainSeries = new GraphView.GraphViewData[NUM_MINUTES];
+            dataRainIntensity = new GraphView.GraphViewData[NUM_MINUTES];
+            for(int i=0; i<NUM_MINUTES; i++) {
+                dataRainSeries[i] = new GraphView.GraphViewData(i, 0);
+                dataRainIntensity[i] = new GraphView.GraphViewData(i, 0);
+            }
 
             getFragmentManager()
                     .beginTransaction()
@@ -397,7 +398,6 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                         ListView listView = (ListView)findViewById(R.id.list_view);
                         JSONObject currentLocation = geoLocation.getGeoNamesData();
 
-
                         int     numItems = currentLocation.length();
                         //if (currentLocation.length() <= 2)
                         //    locationName = "Location error.";
@@ -437,13 +437,13 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                         ListView listView = (ListView)findViewById(R.id.list_view);
 
                         JSONObject currentForecast = forecast.getData().getJSONObject("currently");
-                        Long time = currentForecast.getLong("time");
-                        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-                        Date formattedTime = new Date();
 
+                        String dateAsString = null;
                         try {
-                            formattedTime = format.parse(time.toString());
-                        } catch(ParseException e) {
+                            Long time = currentForecast.getLong("time") * 1000;
+                            SimpleDateFormat format = new SimpleDateFormat("h:mm:ss a z 'on' EEE MMM dd yyyy");
+                            dateAsString = format.format(time);
+                        } catch(Exception e) {
                             e.printStackTrace();
                         }
 
@@ -520,11 +520,12 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                         listView.setAdapter(adapter);
 
                         TextView textView = (TextView) findViewById(R.id.last_updated);
-                        textView.setText("Last updated @ " + formattedTime.toString());
+                        //textView.setText("Last updated @ " + formattedTime.toString());
+                        textView.setText("Last updated @ " + dateAsString);
 
                         // Data for Precipitation Probability
                         for (int i=0; i<NUM_MINUTES; i++) {
-                            dataRainSeries[i] = new GraphView.GraphViewData(i, 100 * Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipProbability")));
+                            dataRainSeries[i] = new GraphView.GraphViewData(i, Math.min(100, 100 * Float.valueOf(minutelyBlockArray.getJSONObject(i).getString("precipProbability"))));
                         }
                         seriesRainChance.resetData(dataRainSeries);
 

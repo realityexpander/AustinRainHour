@@ -2,6 +2,7 @@ package com.realityexpander.austinrainhour;
 
 import android.net.http.AndroidHttpClient;
 import android.os.AsyncTask;
+import android.widget.Toast;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -54,8 +55,10 @@ public class GeoLocation {
         }
 
         protected void onPostExecute(HttpResponse res){
-            status = res.getStatusLine().getStatusCode();
-            response = res;
+            if (res != null) {
+                status = res.getStatusLine().getStatusCode();
+                response = res;
+            }
         }
     }
 
