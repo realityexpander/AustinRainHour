@@ -8,14 +8,12 @@ package com.realityexpander.austinrainhour;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
-import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Binder;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
@@ -38,9 +36,9 @@ public class GPSService extends Service {
 
 	private static final int DISTANCE = 200; //Distance on which to notify the user if he's close to a location
 
-	private Handler handler;
-	private Runnable r;
-	private boolean runrunnable = true;
+//	private Handler handler;
+//	private Runnable r;
+//	private boolean runrunnable = true;
 
 	/** Called when the activity is first created. */
 	private void startLocationService() {
@@ -98,6 +96,7 @@ public class GPSService extends Service {
                 sendBroadcast(i);
             }
         } catch (Exception e) {
+            Toast.makeText(getBaseContext(), "StartLocationService Failed", Toast.LENGTH_SHORT).show();
             Log.e("Problem in GPSService:", "StartLocationService");
         }
 
@@ -119,8 +118,8 @@ public class GPSService extends Service {
 	
 	/* Disable location service (on service close) */ 
 	private void shutdownLocationService() {
-		handler.removeCallbacks(r); 
-		runrunnable = false;
+		//handler.removeCallbacks(r);
+		//runrunnable = false;
 		lm.removeUpdates(locationListener);
 
         if (showingDebugToast) Toast.makeText(getBaseContext(), "Shutdown location service", Toast.LENGTH_SHORT).show();
