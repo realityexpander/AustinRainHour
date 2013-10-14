@@ -14,15 +14,12 @@ import java.io.ByteArrayOutputStream;
 /**
  * Created by realityexpander on 8/27/13.
  */
-public class GeoLocation {
+public class w3wLocation {
 
-    // Returns town name
-     private final String API_URL_NETWORK = "http://api.geonames.org/findNearbyPlaceNameJSON?";
+    // Returns w3w name
+    private final String API_URL_W3W = "http://api.what3words.com/position/";
 
-    // Returns street address
-    private final String API_URL_GPS = "http://api.geonames.org/findNearestAddressJSON?";
-
-    private String API_GEONAMES_USERNAME;
+    private String API_W3W_USERNAME;
 
     protected int status;
     private HttpResponse response;
@@ -65,44 +62,28 @@ public class GeoLocation {
         }
     }
 
-    public GeoLocation(Double latitude, Double longitude, int serviceType, String username){
-        this.API_GEONAMES_USERNAME = username;
+    public w3wLocation(Double latitude, Double longitude, String username){
+        this.API_W3W_USERNAME = username;
 
         if (latitude != 0 && longitude != 0) {
-            String geoNamesUrl = buildGeoNamesUrl(latitude, longitude, serviceType);
+            String geoNamesUrl = buildw3wUrl(latitude, longitude);
             new FetchDataAsync().execute(geoNamesUrl);
         }
     }
 
-    private String buildGeoNamesUrl(Double latitude, Double longitude, int serviceType) {
-
-
-        switch (serviceType) {
-            case 1:
-                // Returns town name
-                //     private final String API_URL = "http://api.geonames.org/findNearbyPlaceNameJSON?";
-                // http://api.geonames.org/findNearbyPlaceNameJSON?lat=33.2323423&lng=22.474473&username=realityexpander
-                return API_URL_NETWORK + "lat=" + latitude.toString() + "&lng=" + longitude.toString() + "&username=" + API_GEONAMES_USERNAME;
-                //break;
-
-            case 2:
-                // http://api.geonames.org/extendedFindNearby?lat=30.2517&lng=-97.7687&username=realityexpander
-                return API_URL_GPS + "lat=" + latitude.toString() + "&lng=" + longitude.toString() + "&username=" + API_GEONAMES_USERNAME;
-                //break;
-        }
-
-        return null;
+    private String buildw3wUrl(Double latitude, Double longitude) {
+       return API_URL_W3W + latitude.toString() +","+ longitude.toString() + "?key=" + API_W3W_USERNAME;
     }
 
-    public HttpResponse getGeoNamesResponse() {
+    public HttpResponse getw3wResponse() {
         return response;
     }
 
-    public JSONObject getGeoNamesData() {
+    public JSONObject getw3wData() {
         return data;
     }
 
-    public int getGeoNamesStatus() {
+    public int getw3wStatus() {
         return status;
     }
 }

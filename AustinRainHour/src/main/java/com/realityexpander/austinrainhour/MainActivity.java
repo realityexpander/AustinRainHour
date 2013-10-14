@@ -35,9 +35,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 
 
 public class MainActivity extends Activity implements FragmentManager.OnBackStackChangedListener {
@@ -45,6 +43,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
     /* API variables */
     private final String API_KEY = "e432b91f50911786e5653ab22eb3073a";
     private final String API_GEONAMES_USERNAME = "realityexpander";
+    private final String API_W3W_USERNAME =  "XRS8P359";
     private static final String TAG = "0xD3ADB33F MainActivity"; // debug helper
 
     private final String CLOUDY = "CLOUDY";
@@ -70,6 +69,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
     // Bundle Save/Restore Data
     private String mLocationName;
     private String[] mForecastStrings;
+    private String mw3wName;
 
     // Graphview stuff
     private GraphView graphView;
@@ -90,6 +90,8 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
     private static boolean mShowingBack = false;
 
     private LatLongBroadcastReceiver latLongBroadcastReceiver;
+
+    private int locationService; // GPS=1 or Network=2
 
     /**
      * A handler object, used for deferring UI operations.
@@ -130,31 +132,36 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Prepare the animated view frame
-        if (savedInstanceState == null) {
+        try {
+            // Prepare the animated view frame
+            if (savedInstanceState == null) {
 
-            // Init the weather data
-            dataRainSeries = new GraphView.GraphViewData[NUM_MINUTES];
-            dataRainIntensity = new GraphView.GraphViewData[NUM_MINUTES];
-            for(int i=0; i<NUM_MINUTES; i++) {
-                dataRainSeries[i] = new GraphView.GraphViewData(i, 0);
-                dataRainIntensity[i] = new GraphView.GraphViewData(i, 0);
+                // Init the weather data
+                dataRainSeries = new GraphView.GraphViewData[NUM_MINUTES];
+                dataRainIntensity = new GraphView.GraphViewData[NUM_MINUTES];
+                for(int i=0; i<NUM_MINUTES; i++) {
+                    dataRainSeries[i] = new GraphView.GraphViewData(i, 0);
+                    dataRainIntensity[i] = new GraphView.GraphViewData(i, 0);
+                }
+
+                getFragmentManager()
+                        .beginTransaction()
+                        .add(R.id.graph1, new BarGraphFragment())
+                        .commit();
+            } else {
+                mShowingBack = (getFragmentManager().getBackStackEntryCount() > 0);
             }
+            getFragmentManager().addOnBackStackChangedListener(this);
 
-            getFragmentManager()
-                    .beginTransaction()
-                    .add(R.id.graph1, new BarGraphFragment())
-                    .commit();
-        } else {
-            mShowingBack = (getFragmentManager().getBackStackEntryCount() > 0);
+            // Start the listener from GPS service
+            if(latLongBroadcastReceiver == null)
+                latLongBroadcastReceiver = new LatLongBroadcastReceiver();
+
+            // Start the GPS listener service
+            startService(new Intent(MainActivity.this, GPSService.class));
+        } catch (Exception e) {
+            Log.e("onCreate", "Problem with onCreate 0xCAFEBABE");
         }
-        getFragmentManager().addOnBackStackChangedListener(this);
-
-        // Start the listener from GPS service
-        latLongBroadcastReceiver = new LatLongBroadcastReceiver();
-
-        // Start the GPS listener service
-        startService(new Intent(MainActivity.this, GPSService.class));
 
     }
 
@@ -170,6 +177,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
 
             lat = intent.getDoubleExtra("lat", 0);
             lng = intent.getDoubleExtra("lng", 0);
+            locationService = intent.getIntExtra("service", 0);
 
             if(location == null)
                 location = new Location(LocationManager.GPS_PROVIDER);
@@ -178,6 +186,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
 //            setLocation(location);
             updateForecast(0);
             updateGeoLocation(0);
+            updateW3WLocation(0);
         }
 
     }
@@ -258,7 +267,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
             graphView.setViewPort(0, 59);
             graphView.setScrollable(false);
             graphView.setShowLegend(true);
-            graphView.getGraphViewStyle().setTextSize(12);
+            graphView.getGraphViewStyle().setTextSize(18);
             graphView.setManualYAxisBounds(100,0);
             graphView.setManualYAxis(true);
             LinearLayout layout = (LinearLayout) rootView.findViewById(R.id.linearLayout); // Use the fragment layout
@@ -360,6 +369,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                             new GeoLocation(
                                     MainActivity.this.location.getLatitude(),
                                     MainActivity.this.location.getLongitude(),
+                                    locationService,
                                     API_GEONAMES_USERNAME
                             )
                     );
@@ -371,12 +381,40 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
         }, interval); /* todo:simulate a slow network */
     }
 
+    /**
+     * waits for location data to be received at some specified interval
+     */
+    private void updateW3WLocation(long interval) {
+        final Handler h = new Handler();
+        final Location location = this.location;
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (location != null) {
+                    updateW3WLocationDisplay(
+                            // Get the new GeoLocation name from location
+                            new w3wLocation(
+                                    MainActivity.this.location.getLatitude(),
+                                    MainActivity.this.location.getLongitude(),
+                                    API_W3W_USERNAME
+                            )
+                    );
+                    h.removeCallbacks(this);
+                } else {
+                    updateGeoLocation();
+                }
+            }
+        }, interval); /* todo:simulate a slow network */
+    }
 
     private void updateForecast() {
         updateForecast(updateForecastDefaultDelay);
     }
     private void updateGeoLocation() {
         updateGeoLocation(updateForecastDefaultDelay);
+    }
+    private void updateW3WLocation() {
+        updateW3WLocation(updateForecastDefaultDelay);
     }
 
     //update gelocationname
@@ -389,29 +427,81 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
             public void run() {
                 if (g.getGeoNamesStatus() == HttpStatus.SC_OK) {
                     //h is the handler, removing the callback causes it to stop being called
-                    h.removeCallbacks(this);
+                    if (h!= null)
+                        h.removeCallbacks(this);
                     // Set the geolocationName
                     TextView textView = (TextView) findViewById(R.id.text_view);
                     textView.setText("");
 
                     try {
-                        ListView listView = (ListView)findViewById(R.id.list_view);
+                        //ListView listView = (ListView)findViewById(R.id.list_view);
                         JSONObject currentLocation = geoLocation.getGeoNamesData();
 
-                        int     numItems = currentLocation.length();
+                        //int     numItems = currentLocation.length();
                         //if (currentLocation.length() <= 2)
                         //    locationName = "Location error.";
                         //else
-                        mLocationName =
-                                currentLocation.getJSONArray("geonames").getJSONObject(0).getString("name") + ", " +
-                                        currentLocation.getJSONArray("geonames").getJSONObject(0).getString("adminCode1");
-                        // JSONRawData->JSONNamedObject(geonames)->JSONArray[0]->JSONObject->Key=adminCode1
+                        switch(locationService){
+                            case 1:
+                                // Gets the local city name
+                               mLocationName =
+                                    currentLocation.getJSONArray("geonames").getJSONObject(0).getString("name") + ", " +
+                                    currentLocation.getJSONArray("geonames").getJSONObject(0).getString("adminCode1");
+                                // JSONRawData->JSONNamedObject(geonames)->JSONArray[0]->JSONObject->Key=adminCode1
+                                break;
+
+                            case 2:
+                                // Gets the nearest street address
+                                mLocationName =
+                                    currentLocation.getJSONObject("address").getString("streetNumber") + " "+
+                                    currentLocation.getJSONObject("address").getString("street");
+                                break;
+                        }
+
                         textView.setText(mLocationName);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
                 } else {
                     updateGeoLocationDisplay(g);
+                }
+
+            }
+        }, interval);
+    }
+
+    //update w3wLocation Name
+    private void updateW3WLocationDisplay(final w3wLocation w3wLoc, long interval) {
+        final Handler h = new Handler();
+        final w3wLocation w = w3wLoc;
+
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (w.getw3wStatus() == HttpStatus.SC_OK) {
+                    //h is the handler, removing the callback causes it to stop being called
+                    if (h!= null)
+                        h.removeCallbacks(this);
+                    // Set the geolocationName
+                    TextView textView = (TextView) findViewById(R.id.w3w_name);
+                    textView.setText("");
+
+                    try {
+                        //ListView listView = (ListView)findViewById(R.id.list_view);
+                        JSONObject currentLocation = w3wLoc.getw3wData();
+
+                        // Gets the local w3w name
+                        mw3wName =
+                                currentLocation.getJSONArray("words").getString(0) + "." +
+                                        currentLocation.getJSONArray("words").getString(1) + "." +
+                                        currentLocation.getJSONArray("words").getString(2);
+
+                        textView.setText(mw3wName);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    updateW3WLocationDisplay(w);
                 }
 
             }
@@ -428,7 +518,8 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
 
                 // Get the weather data
                 if (f.getStatus() == HttpStatus.SC_OK) {
-                    h.removeCallbacks(this);
+                    if( h!= null)
+                        h.removeCallbacks(this);
 
                     ProgressBar spinner = (ProgressBar) findViewById(R.id.loading_spinner);
                     spinner.setVisibility(View.INVISIBLE);
@@ -499,7 +590,6 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
 
                         // Get the current conditions strings
                         String[] conditions = new String[]{
-                                minutelySummaryString[0],
                                 currentForecast.getString("summary") + " currently.",
                                 //currentForecast.getString("precipIntensity"),
                                 //currentForecast.getString("precipProbability"),
@@ -519,9 +609,13 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                         ArrayAdapter adapter = new ArrayAdapter<String>(getApplicationContext(), R.layout.weather_info, conditions);
                         listView.setAdapter(adapter);
 
+                        // Last updated time
                         TextView textView = (TextView) findViewById(R.id.last_updated);
-                        //textView.setText("Last updated @ " + formattedTime.toString());
                         textView.setText("Last updated @ " + dateAsString);
+
+                        // Hour forecast
+                        textView = (TextView) findViewById(R.id.hourcast);
+                        textView.setText(minutelySummaryString[0]);
 
                         // Data for Precipitation Probability
                         for (int i=0; i<NUM_MINUTES; i++) {
@@ -571,7 +665,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                         weatherInfoFragment.SetPrecipAndIntensity(precip, intensity);
 
 
-                    } catch (JSONException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 } else {
@@ -587,6 +681,9 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
     private void updateGeoLocationDisplay(final GeoLocation geoLocation) {
         updateGeoLocationDisplay(geoLocation, updateDisplayDefaultDelay);
     }
+    private void updateW3WLocationDisplay(final w3wLocation w3wLoc) {
+        updateW3WLocationDisplay(w3wLoc, updateDisplayDefaultDelay);
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -594,4 +691,26 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
+
+    private String dir2txt(int val) {
+        if ( val <= 0 || val > 360) {
+            return null;
+        }
+        String[] dirs = new String[]{ "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"};
+
+        // deal with special north case
+        if ((val >= 348.75 && val <= 360) || val > 0 && val < 11.25) return "N";
+
+        float i = (float) 11.25; // 1/2 degree incerment between the directions
+        for (int j=0; j<dirs.length; j++) {
+            if (val >= i && val < (i + 22.5)) {
+                return dirs[j];
+            }
+            i += 22.5;
+        }
+
+        // shouldn't ever get here
+        return null;
+    }
+
 }

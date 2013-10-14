@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">RainThisHour</string>
+    <string name="app_name">Hyperlocal Weather</string>
     <string name="action_settings">Settings</string>
-    <string name="hello_world">Getting location information...</string>
+    <string name="hello_world">Hyperlocating...</string>
     <string name="service_name">Task Location Service</string>
 
 

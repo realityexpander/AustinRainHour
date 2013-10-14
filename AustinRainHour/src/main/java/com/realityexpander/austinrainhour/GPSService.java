@@ -24,17 +24,19 @@ public class GPSService extends Service {
 	private LocationListener locationListener;
 
 	private static long minTimeMillischange = 60000; //Minimum time to timer 
-	private static long minTimeMillis = 10000;		//Minimum time and distance 
-	private static long minDistanceMeters = 100;    //before checking location changes
+	private static long minTimeMillis = 60000;		//Minimum time and distance
+	private static long minDistanceMeters = 200;    //before checking location changes
 
 	private int lastStatus = 0;	 //GPS provider status
-	private static boolean showingDebugToast = true; //Debug toasts
+	private static boolean showingDebugToast = false; //Debug toasts
 
 	private NotificationManager mNM;
 
 	private static final String tag = "GPSService: ";
 
 	private static final int DISTANCE = 200; //Distance on which to notify the user if he's close to a location
+
+    private int locationServiceUsed;
 
 //	private Handler handler;
 //	private Runnable r;
@@ -54,33 +56,45 @@ public class GPSService extends Service {
             Location location = null;
             if (lm == null) {
                 //if (showingDebugToast)
-                    Toast.makeText(getBaseContext(), "No Location Available", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getBaseContext(), "Location Unavailable", Toast.LENGTH_SHORT).show();
             } else {
 
                 lm.requestLocationUpdates(LocationManager.GPS_PROVIDER,
                         minTimeMillis,
                         minDistanceMeters,
                         locationListener);
-                lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
-                        minTimeMillis,
-                        minDistanceMeters,
-                        locationListener);
+
+                locationServiceUsed = 0;
 
                 // Try the GPS
                 if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)){
                     location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                    if(location!= null)
-                        if (showingDebugToast) Toast.makeText(getBaseContext(), "GPS provider", Toast.LENGTH_SHORT).show();
-                }
+                    if(location!= null) {
+                        //if (showingDebugToast)
+                            Toast.makeText(getBaseContext(), "GPS provider", Toast.LENGTH_SHORT).show();
+                        locationServiceUsed = 2;
+                    }
+                } else {
+                    // If the GPS is off, try the network
+                    lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                            minTimeMillis,
+                            minDistanceMeters,
+                            locationListener);
 
-                // Try the network
-                if (location == null) {
-                    if (lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                        location = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                        if(location!= null)
-                            if (showingDebugToast) Toast.makeText(getBaseContext(), "Network provider", Toast.LENGTH_SHORT).show();
+                    // Try the network
+                    if (location == null) {
+                        if (lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                            location = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                            if(location!= null) {
+                                //if (showingDebugToast)
+                                Toast.makeText(getBaseContext(), "Network provider", Toast.LENGTH_SHORT).show();
+                                locationServiceUsed = 1;
+                            }
+                        }
                     }
                 }
+
+
             }
 
             if( location == null )
@@ -93,6 +107,7 @@ public class GPSService extends Service {
                 i.setAction("LatLong");
                 i.putExtra("lat", location.getLatitude());
                 i.putExtra("lng", location.getLongitude());
+                i.putExtra("service", locationServiceUsed);
                 sendBroadcast(i);
             }
         } catch (Exception e) {
@@ -139,6 +154,7 @@ public class GPSService extends Service {
                 i.setAction("LatLong");
                 i.putExtra("lat", location.getLatitude());
                 i.putExtra("lng", location.getLongitude());
+                i.putExtra("service", locationServiceUsed);
                 sendBroadcast(i);
 
 //				if (showingDebugToast) Toast.makeText(getBaseContext(),
@@ -223,7 +239,8 @@ public class GPSService extends Service {
             Toast.makeText(this, "Location service stopped", Toast.LENGTH_SHORT).show();
         }
 
-		mNM.cancel(0);
+        if (mNM != null)
+            mNM.cancel(0);
 
         shutdownLocationService();
 	}

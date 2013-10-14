@@ -11,7 +11,6 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
